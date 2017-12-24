@@ -1,0 +1,29 @@
+{
+  "name": "henhouse-store-sequelize",
+  "version": "1.0.0",
+  "description": "a store plugin for henhouse, access db by sequelize",
+  "main": "src/index.js",
+  "scripts": {},
+  "author": "scrollbar.ww",
+  "license": "MIT",
+  "keywords": [
+    "henhouse"
+  ],
+  "files": [
+    "src"
+  ],
+  "engines": {
+    "node": ">=8.9.0"
+  },
+  "dependencies": {
+    "henhouse": "^2.0.0",
+    "sequelize": "^4.28.6"
+  },
+  "devDependencies": {
+    "biguint-format": "^1.0.0",
+    "flake-idgen": "^1.1.0",
+    "request": "^2.83.0",
+    "request-promise-native": "^1.0.5",
+    "sqlite3": "^3.1.13"
+  }
+}

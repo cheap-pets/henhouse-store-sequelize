@@ -1,0 +1,5 @@
+module.exports = {
+  UNDERLINE: 'UNDERLINE',
+  TUNDERLINE: 'TUNDERLINE',
+  CAMELCASE: 'CAMELCASE'
+}
