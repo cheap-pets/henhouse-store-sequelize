@@ -59,7 +59,7 @@ const tenant = myService.define(
   },
   {
     idGenerator: idGen,
-    methods: ['get', 'post', 'put', 'patch']
+    methods: ['get', 'post', 'patch']
   }
 ).sequelizeModel
 
@@ -77,7 +77,7 @@ const user = myService.define(
   },
   {
     idGenerator: idGen,
-    methods: ['get', 'post', 'put', 'patch']
+    methods: ['get', 'post', 'patch']
   }
 ).sequelizeModel
 
@@ -109,7 +109,7 @@ const tenantUser = myService.define(
   },
   {
     idGenerator: idGen,
-    methods: ['get', 'post', 'put', 'patch']
+    methods: ['get', 'post', 'patch']
   }
 ).sequelizeModel
 tenantUser.belongsTo(tenant)
@@ -231,6 +231,7 @@ async function test () {
     await testPatchTenantUser(tenantUserId)
     const v = (await testGetTenantUserById(tenantUserId))
     console.info('[info]', '备注名称', v.userAlias)
+    myService.close()
   } catch (err) {
     console.error('[error]', err)
   }

@@ -79,65 +79,64 @@ async function prepareValuesArray (data, model, isPostMethod) {
   }
 }
 
-async function getModels (ctx, next, model, id) {
-  const seqModel = model.sequelizeModel
-  let options = prepareAttributes(seqModel, ctx.attributesQueryArray || ['*'])
+async function query (attributes, queryOptions, id) {
+  const seqModel = this.sequelizeModel
+  let options = prepareAttributes(seqModel, attributes || ['*'])
   if (id === undefined) {
-    options.limit = ctx.query.limit || 100
-    options.offset = ctx.query.offset || 0
+    options.limit = queryOptions.limit || 100
+    options.offset = queryOptions.offset || 0
   }
-  ctx.body = id === undefined
+  const ret = id === undefined
     ? await seqModel.findAll(options)
     : await seqModel.findById(id, options)
+  return ret
 }
 
-async function postModels (ctx, next, model) {
-  const seqModel = model.sequelizeModel
+async function create (data) {
+  const seqModel = this.sequelizeModel
   const primaryKey = seqModel.primaryKeyAttribute
   let ret
-  if (isArray(ctx.request.body)) {
-    const dataArr = await prepareValuesArray(ctx.request.body, model, true)
+  if (isArray(data)) {
+    const dataArr = await prepareValuesArray(data, this, true)
     ret = []
     for (let i = 0, len = dataArr.length; i < len; i++) {
       ret.push((await seqModel.create(dataArr[i]))[primaryKey])
     }
   } else {
-    const data = await prepareValues(ctx.request.body, model, true)
-    ret = (await seqModel.create(data))[primaryKey]
+    const modelData = await prepareValues(data, this, true)
+    ret = (await seqModel.create(modelData))[primaryKey]
   }
-  ctx.body = ret
+  return ret
 }
 
-async function updateModels (ctx, next, model, id) {
-  const seqModel = model.sequelizeModel
+async function update (data, id) {
+  const seqModel = this.sequelizeModel
   const primaryKey = seqModel.primaryKeyAttribute
-  if (isArray(ctx.request.body)) {
-    const dataArr = await prepareValuesArray(ctx.request.body, model)
+  if (isArray(data)) {
+    const dataArr = await prepareValuesArray(data, this)
     for (let i = 0, len = dataArr.length; i < len; i++) {
       const queryOptions = {}
       queryOptions[primaryKey] = dataArr[i][primaryKey]
       await seqModel.update(dataArr[i], { where: queryOptions })
     }
   } else {
-    const data = await prepareValues(ctx.request.body, model)
+    const updateData = await prepareValues(data, this)
     const queryOptions = {}
     queryOptions[primaryKey] = id === undefined ? data[primaryKey] : id
-    await seqModel.update(data, { where: queryOptions })
+    await seqModel.update(updateData, { where: queryOptions })
   }
-  ctx.body = 'ok'
 }
 
-async function deleteModels (ctx, next, model, id) {
-  const seqModel = model.sequelizeModel
+async function remove (id) {
+  const seqModel = this.sequelizeModel
   const queryOptions = {}
   if (id !== undefined) queryOptions[seqModel.primaryKeyAttribute] = id
   await seqModel.destroy({ where: queryOptions })
 }
 
 module.exports = {
-  get: getModels,
-  post: postModels,
-  put: updateModels,
-  patch: updateModels,
-  delete: deleteModels
+  query,
+  create,
+  update,
+  remove
 }
