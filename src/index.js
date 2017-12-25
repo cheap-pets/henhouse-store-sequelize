@@ -65,7 +65,7 @@ class SequelizeStore {
     model.methods = {}
     for (let i = 0, len = methods.length; i < len; i++) {
       const m = methods[i]
-      isString(m) ? (model.methods[m] = getAccessProcedure(m)) : (model.methods[m.type] = m.methods)
+      isString(m) ? (model.methods[m] = getAccessProcedure(m)) : (model.methods[m.type] = m.method)
     }
     return model
   }
