@@ -59,7 +59,12 @@ const tenant = myService.define(
   },
   {
     idGenerator: idGen,
-    methods: ['get', 'post', 'patch']
+    methods: ['get', 'post', 'patch'],
+    getterMethods: {
+      fullName () {
+        return 'xxx'
+      }
+    }
   }
 ).sequelizeModel
 

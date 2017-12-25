@@ -24,7 +24,7 @@ function defineModel (sequelize, name, attributes, options) {
       updatedAt: false,
       deletedAt: false
     },
-    options.sequelizeDefineOptions
+    options
   )
 
   const attributesOptions = {}
