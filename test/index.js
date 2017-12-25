@@ -195,7 +195,7 @@ async function testPostTenantUser (tenantId, userId) {
 }
 
 async function testGetTenantUsers () {
-  const ret = await request('http://localhost:3000/my-service/tenant-users?fields=*,user(id, userName)', { json: true })
+  const ret = await request('http://localhost:3000/my-service/tenant-users?fields=*,user(id, userName)&id=0', { json: true })
   return ret
 }
 
