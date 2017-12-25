@@ -80,6 +80,7 @@ async function prepareValuesArray (data, model, isPostMethod) {
 }
 
 async function query (attributes, queryOptions, id) {
+  queryOptions = queryOptions || {}
   const seqModel = this.sequelizeModel
   let options = prepareAttributes(seqModel, attributes || ['*'])
   if (id === undefined) {
