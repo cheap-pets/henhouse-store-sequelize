@@ -65,11 +65,7 @@ async function prepareValuesArray (data, model, isPostMethod) {
     }
     for (let i = 0; i < count; i++) {
       const item = data[i]
-      if (
-        ids &&
-        ids.length > i &&
-        item[primaryKeyAttribute] === undefined
-      ) {
+      if (ids && ids.length > i && item[primaryKeyAttribute] === undefined) {
         item[primaryKeyAttribute] = ids[i]
       }
       valuesArray.push(await prepareValues(item, model))
@@ -86,6 +82,14 @@ async function query (attributes, queryOptions, id) {
   if (id === undefined) {
     options.limit = queryOptions.limit || 100
     options.offset = queryOptions.offset || 0
+  }
+  const whereOptions = {}
+  for (let p in queryOptions) {
+    if (p === 'fields' || p === 'limit' || p === 'offset' || p === '_ts') { continue }
+    whereOptions[p] = queryOptions[p]
+  }
+  if (Object.keys(whereOptions).length > 0) {
+    options.where = whereOptions
   }
   const ret = id === undefined
     ? await seqModel.findAll(options)
