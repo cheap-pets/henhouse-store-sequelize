@@ -50,6 +50,7 @@ class SequelizeStore {
   }
   define (modelName, attributes, options) {
     const model = {}
+    options = options || {}
     options.tableNameMode = options.tableNameMode || this.tableNameMode
     options.fieldNameMode = options.fieldNameMode || this.fieldNameMode
     model.sequelizeModel = defineSequelizeModel(this.sequelize, modelName, attributes, options)

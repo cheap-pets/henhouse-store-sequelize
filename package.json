@@ -1,6 +1,6 @@
 {
   "name": "henhouse-store-sequelize",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "a store plugin for henhouse, access db by sequelize",
   "main": "src/index.js",
   "scripts": {},
@@ -16,7 +16,7 @@
     "node": ">=8.9.0"
   },
   "dependencies": {
-    "henhouse": "^2.0.1",
+    "henhouse": "^2.0.2",
     "sequelize": "^4.28.6"
   },
   "devDependencies": {
