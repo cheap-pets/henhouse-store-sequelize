@@ -3,8 +3,8 @@ const Sequelize = require('sequelize')
 const TableNameMode = require('./constants/table-name-modes')
 const FieldNameMode = require('./constants/field-name-modes')
 
-const defineSequelizeModel = require('./define-sequelize-model')
-const access = require('./model-access')
+const defineModel = require('./define-model')
+const accessModel = require('./access-model')
 
 const { isString } = require('./utils/check-type')
 
@@ -17,7 +17,7 @@ function getAccessProcedure (method) {
   switch (method) {
     case 'get':
       procedure = async (ctx, next, model, id) => {
-        ctx.body = await model.query(ctx.attributesQueryArray, ctx.query, id)
+        ctx.body = await model.query(ctx.$attributes, ctx.query, id)
       }
       break
     case 'post':
@@ -53,14 +53,16 @@ class SequelizeStore {
     options = options || {}
     options.tableNameMode = options.tableNameMode || this.tableNameMode
     options.fieldNameMode = options.fieldNameMode || this.fieldNameMode
-    model.sequelizeModel = defineSequelizeModel(this.sequelize, modelName, attributes, options)
+    const { sequelizeModel, associations } = defineModel(this.sequelize, modelName, attributes, options)
+    model.sequelizeModel = sequelizeModel
+    model.associations = associations
     model.idGenerator = options.idGenerator
-    model.query = access.query
+    model.query = accessModel.query
     if (options.canModify !== false) {
-      model.create = access.create
-      model.update = access.update
+      model.create = accessModel.create
+      model.update = accessModel.update
     }
-    (options.canRemove !== false) && (model.remove = access.remove)
+    (options.canRemove !== false) && (model.remove = accessModel.remove)
     const methods = options.methods || []
     model.methods = {}
     for (let i = 0, len = methods.length; i < len; i++) {

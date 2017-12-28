@@ -1,37 +1,59 @@
 const { isArray, isString } = require('./utils/check-type')
 
+function getAllAttributes (sqlzModel) {
+  const result = []
+  const fields = {}
+  for (let key in sqlzModel.attributes) {
+    const item = sqlzModel.attributes[key]
+    if (!fields[item.field]) {
+      fields[item.field] = true
+      result.push(key)
+    }
+  }
+  return result
+}
+
+function getIncludeAttributes (associations, name, queryAttributes) {
+  const item = associations[name]
+  if (!item || !item.model.sequelizeModel) return false
+  const sqlzModel = item.model.sequelizeModel
+  const result = {
+    model: sqlzModel,
+    required: item.required,
+    as: name
+  }
+  const { attributes, includes } = prepareAttributes(
+    item.model,
+    queryAttributes
+  )
+  attributes && (result.attributes = attributes)
+  includes && (result.include = includes)
+  return result
+}
+
 function prepareAttributes (model, queryAttributes) {
-  const sequelize = model.sequelize
+  const sqlzModel = model.sequelizeModel
   const len = queryAttributes.length
   let attributes = []
-  const includes = []
+  const includeOptions = []
   for (let i = 0; i < len; i++) {
-    const attr = queryAttributes[i]
-    if (isString(attr)) {
-      if (attr === '*') {
-        attributes = attributes.concat(Object.keys(model.attributes))
-      } else if (model.attributes[attr]) {
-        attributes.push(attr)
+    const item = queryAttributes[i]
+    if (isString(item)) {
+      if (item === '*') {
+        attributes = getAllAttributes(sqlzModel)
+      } else if (sqlzModel.attributes[item]) {
+        attributes.push(item)
       }
-    } else if (attr.model) {
-      const includeModel = sequelize.models[attr.model]
-      if (includeModel) {
-        const includeOptions = prepareAttributes(includeModel, attr.attributes)
-        const include = {
-          model: includeModel,
-          attributes: includeOptions.attributes,
-          required: true
-        }
-        if (includeOptions.includes) {
-          include.include = includeOptions.includes
-        }
-        includes.push(include)
+    } else if (item) {
+      for (let key in item) {
+        const include = getIncludeAttributes(model.associations, key, item[key])
+        include && includeOptions.push(include)
       }
     }
   }
   const result = {}
   if (attributes) result.attributes = attributes
-  if (includes) result.include = includes
+  if (includeOptions) result.include = includeOptions
   return result
 }
 
@@ -77,23 +99,24 @@ async function prepareValuesArray (data, model, isPostMethod) {
 
 async function query (attributes, queryOptions, id) {
   queryOptions = queryOptions || {}
-  const seqModel = this.sequelizeModel
-  let options = prepareAttributes(seqModel, attributes || ['*'])
+  let options = prepareAttributes(this, attributes || ['*'])
   if (id === undefined) {
     options.limit = queryOptions.limit || 100
     options.offset = queryOptions.offset || 0
   }
   const whereOptions = {}
   for (let p in queryOptions) {
-    if (p === 'fields' || p === 'limit' || p === 'offset' || p === '_ts') { continue }
+    if (p === 'fields' || p === 'limit' || p === 'offset' || p === '_ts') {
+      continue
+    }
     whereOptions[p] = queryOptions[p]
   }
   if (Object.keys(whereOptions).length > 0) {
     options.where = whereOptions
   }
   const ret = id === undefined
-    ? await seqModel.findAll(options)
-    : await seqModel.findById(id, options)
+    ? await this.sequelizeModel.findAll(options)
+    : await this.sequelizeModel.findById(id, options)
   return ret
 }
 

@@ -34,6 +34,7 @@ const sequelizeStore = new SequelizeStore({
     idle: 30000
   }
 })
+
 /*
 myService.sequelize
   .authenticate()
@@ -66,7 +67,7 @@ const tenant = myService.define(
       }
     }
   }
-).sequelizeModel
+)
 
 const user = myService.define(
   sequelizeStore,
@@ -84,26 +85,20 @@ const user = myService.define(
     idGenerator: idGen,
     methods: ['get', 'post', 'patch']
   }
-).sequelizeModel
+)
 
 const tenantUser = myService.define(
   sequelizeStore,
   'tenantUser',
   {
     id: Types.ID,
-    tenantId: {
-      type: Types.INTEGER,
-      references: {
-        model: 'tenant',
-        key: 'id'
-      }
+    tenant: {
+      model: tenant
     },
-    userId: {
-      type: Types.INTEGER,
-      references: {
-        model: 'user',
-        key: 'id'
-      }
+    person: {
+      model: user,
+      foreignKey: 'userId',
+      required: false
     },
     userAlias: Types.STRING,
     isAdmin: Types.BOOLEAN,
@@ -113,12 +108,11 @@ const tenantUser = myService.define(
     updatedAt: Types.DATE
   },
   {
+    underscored: true,
     idGenerator: idGen,
     methods: ['get', 'post', 'patch']
   }
-).sequelizeModel
-tenantUser.belongsTo(tenant)
-tenantUser.belongsTo(user)
+)
 
 myService.listen(3000)
 
@@ -200,7 +194,7 @@ async function testPostTenantUser (tenantId, userId) {
 }
 
 async function testGetTenantUsers () {
-  const ret = await request('http://localhost:3000/my-service/tenant-users?fields=*,user(id, userName)&id=0', { json: true })
+  const ret = await request('http://localhost:3000/my-service/tenant-users?fields=id,person.id,person.userName', { json: true })
   return ret
 }
 
