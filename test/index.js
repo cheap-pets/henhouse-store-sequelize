@@ -120,10 +120,15 @@ async function testPostTenant () {
   const ret = await request({
     method: 'POST',
     url: 'http://localhost:3000/my-service/tenants',
-    form: {
+    form: [{
       tenantName: 'xx',
       shortName: 'x'
-    }
+    },
+    {
+      tenantName: 'yy',
+      shortName: 'y'
+    }],
+    json: true
   })
   return ret
 }
@@ -139,7 +144,8 @@ async function testPatchTenant (id) {
     url: 'http://localhost:3000/my-service/tenants/' + id,
     form: {
       tenantName: 'yy'
-    }
+    },
+    json: true
   })
 }
 
@@ -215,21 +221,21 @@ async function testGetTenantUserById (id) {
 
 async function test () {
   try {
-    const tenantId = await testPostTenant()
+    const tenantId = (await testPostTenant())[0]
     console.info('[info]', '租户数量', (await testGetTenants()).length)
     await testPatchTenant(tenantId)
-    console.info('[info]', '租户名称', (await testGetTenantById(tenantId)).userName)
+    console.info('[info]', '租户名称', (await testGetTenantById(tenantId)).tenantName)
 
-    const userId = await testPostUser()
-    console.info('[info]', '用户数量', (await testGetUsers()).length)
-    await testPatchUser(userId)
-    console.info('[info]', '用户名称', (await testGetUserById(userId)).userName)
+    // const userId = await testPostUser()
+    // console.info('[info]', '用户数量', (await testGetUsers()).length)
+    // await testPatchUser(userId)
+    // console.info('[info]', '用户名称', (await testGetUserById(userId)).userName)
 
-    const tenantUserId = await testPostTenantUser(tenantId, userId)
-    console.info('[info]', '租户用户数量', (await testGetTenantUsers(tenantId)).length)
-    await testPatchTenantUser(tenantUserId)
-    const v = (await testGetTenantUserById(tenantUserId))
-    console.info('[info]', '备注名称', v.userAlias)
+    // const tenantUserId = await testPostTenantUser(tenantId, userId)
+    // console.info('[info]', '租户用户数量', (await testGetTenantUsers(tenantId)).length)
+    // await testPatchTenantUser(tenantUserId)
+    // const v = (await testGetTenantUserById(tenantUserId))
+    // console.info('[info]', '备注名称', v.userAlias)
     myService.close()
   } catch (err) {
     console.error('[error]', err)

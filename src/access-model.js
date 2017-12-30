@@ -77,8 +77,9 @@ async function prepareValues (data, model, isPostMethod) {
 }
 
 async function prepareValuesArray (data, model, isPostMethod) {
-  const valuesArray = []
+  let ret
   if (isArray(data)) {
+    ret = []
     const count = data.length
     const primaryKeyAttribute = model.sequelizeModel.primaryKeyAttribute
     let ids
@@ -90,11 +91,12 @@ async function prepareValuesArray (data, model, isPostMethod) {
       if (ids && ids.length > i && item[primaryKeyAttribute] === undefined) {
         item[primaryKeyAttribute] = ids[i]
       }
-      valuesArray.push(await prepareValues(item, model))
+      ret.push(await prepareValues(item, model))
     }
   } else {
-    return prepareValues(data, model, isPostMethod)
+    ret = await prepareValues(data, model, isPostMethod)
   }
+  return ret
 }
 
 async function query (attributes, queryOptions, id) {
@@ -124,14 +126,13 @@ async function create (data) {
   const seqModel = this.sequelizeModel
   const primaryKey = seqModel.primaryKeyAttribute
   let ret
-  if (isArray(data)) {
-    const dataArr = await prepareValuesArray(data, this, true)
+  const modelData = await prepareValuesArray(data, this, true)
+  if (isArray(modelData)) {
     ret = []
-    for (let i = 0, len = dataArr.length; i < len; i++) {
-      ret.push((await seqModel.create(dataArr[i]))[primaryKey])
+    for (let i = 0, len = modelData.length; i < len; i++) {
+      ret.push((await seqModel.create(modelData[i]))[primaryKey])
     }
   } else {
-    const modelData = await prepareValues(data, this, true)
     ret = (await seqModel.create(modelData))[primaryKey]
   }
   return ret
@@ -140,18 +141,17 @@ async function create (data) {
 async function update (data, id) {
   const seqModel = this.sequelizeModel
   const primaryKey = seqModel.primaryKeyAttribute
-  if (isArray(data)) {
-    const dataArr = await prepareValuesArray(data, this)
-    for (let i = 0, len = dataArr.length; i < len; i++) {
+  const modelData = await prepareValuesArray(data, this)
+  if (isArray(modelData)) {
+    for (let i = 0, len = modelData.length; i < len; i++) {
       const queryOptions = {}
-      queryOptions[primaryKey] = dataArr[i][primaryKey]
-      await seqModel.update(dataArr[i], { where: queryOptions })
+      queryOptions[primaryKey] = modelData[i][primaryKey]
+      await seqModel.update(modelData[i], { where: queryOptions })
     }
   } else {
-    const updateData = await prepareValues(data, this)
     const queryOptions = {}
     queryOptions[primaryKey] = id === undefined ? data[primaryKey] : id
-    await seqModel.update(updateData, { where: queryOptions })
+    await seqModel.update(modelData, { where: queryOptions })
   }
 }
 

@@ -22,13 +22,13 @@ function getAccessProcedure (method) {
       break
     case 'post':
       procedure = async (ctx, next, model, id) => {
-        ctx.body = await model.create(ctx.request.body)
+        ctx.body = await model.create(ctx.$requestBody)
       }
       break
     case 'put':
     case 'patch':
       procedure = async (ctx, next, model, id) => {
-        await model.update(ctx.request.body, id)
+        await model.update(ctx.$requestBody, id)
         ctx.body = 'ok'
       }
       break
