@@ -1,6 +1,6 @@
 {
   "name": "henhouse-store-sequelize",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "a store plugin for henhouse, access db by sequelize",
   "main": "src/index.js",
   "scripts": {},
