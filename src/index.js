@@ -17,7 +17,10 @@ function getAccessProcedure (method) {
   switch (method) {
     case 'get':
       procedure = async (ctx, next, model, id) => {
-        ctx.body = await model.query(ctx.$attributes, ctx.query, id)
+        const data = await model.query(ctx.$queryOptions, id)
+        ctx.body = JSON.stringify(data, function (key, value) {
+          return (value === null) ? undefined : value
+        })
       }
       break
     case 'post':

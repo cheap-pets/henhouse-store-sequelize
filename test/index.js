@@ -120,21 +120,25 @@ async function testPostTenant () {
   const ret = await request({
     method: 'POST',
     url: 'http://localhost:3000/my-service/tenants',
-    form: [{
-      tenantName: 'xx',
-      shortName: 'x'
-    },
-    {
-      tenantName: 'yy',
-      shortName: 'y'
-    }],
+    form: [
+      {
+        tenantName: 'xx',
+        shortName: 'x'
+      },
+      {
+        tenantName: 'yy',
+        shortName: 'y'
+      }
+    ],
     json: true
   })
   return ret
 }
 
 async function testGetTenants () {
-  const ret = await request('http://localhost:3000/my-service/tenants', { json: true })
+  const ret = await request('http://localhost:3000/my-service/tenants', {
+    json: true
+  })
   return ret
 }
 
@@ -150,7 +154,9 @@ async function testPatchTenant (id) {
 }
 
 async function testGetTenantById (id) {
-  const ret = await request('http://localhost:3000/my-service/tenants/' + id, { json: true })
+  const ret = await request('http://localhost:3000/my-service/tenants/' + id, {
+    json: true
+  })
   return ret
 }
 
@@ -167,7 +173,9 @@ async function testPostUser () {
 }
 
 async function testGetUsers () {
-  const ret = await request('http://localhost:3000/my-service/users', { json: true })
+  const ret = await request('http://localhost:3000/my-service/users', {
+    json: true
+  })
   return ret
 }
 
@@ -182,7 +190,9 @@ async function testPatchUser (id) {
 }
 
 async function testGetUserById (id) {
-  const ret = await request('http://localhost:3000/my-service/users/' + id, { json: true })
+  const ret = await request('http://localhost:3000/my-service/users/' + id, {
+    json: true
+  })
   return ret
 }
 
@@ -200,7 +210,10 @@ async function testPostTenantUser (tenantId, userId) {
 }
 
 async function testGetTenantUsers () {
-  const ret = await request('http://localhost:3000/my-service/tenant-users?fields=id,person.id,person.userName', { json: true })
+  const ret = await request(
+    'http://localhost:3000/my-service/tenant-users?limit=10&order=-id&fields=id,person.userName,tenant.tenantName&tenant.tenantName=y*',
+    { json: true }
+  )
   return ret
 }
 
@@ -215,7 +228,10 @@ async function testPatchTenantUser (id) {
 }
 
 async function testGetTenantUserById (id) {
-  const ret = await request('http://localhost:3000/my-service/tenant-users/' + id, { json: true })
+  const ret = await request(
+    'http://localhost:3000/my-service/tenant-users/' + id,
+    { json: true }
+  )
   return ret
 }
 
@@ -224,18 +240,26 @@ async function test () {
     const tenantId = (await testPostTenant())[0]
     console.info('[info]', '租户数量', (await testGetTenants()).length)
     await testPatchTenant(tenantId)
-    console.info('[info]', '租户名称', (await testGetTenantById(tenantId)).tenantName)
+    console.info(
+      '[info]',
+      '租户名称',
+      (await testGetTenantById(tenantId)).tenantName
+    )
 
-    // const userId = await testPostUser()
-    // console.info('[info]', '用户数量', (await testGetUsers()).length)
-    // await testPatchUser(userId)
-    // console.info('[info]', '用户名称', (await testGetUserById(userId)).userName)
+    const userId = await testPostUser()
+    console.info('[info]', '用户数量', (await testGetUsers()).length)
+    await testPatchUser(userId)
+    console.info('[info]', '用户名称', (await testGetUserById(userId)).userName)
 
-    // const tenantUserId = await testPostTenantUser(tenantId, userId)
-    // console.info('[info]', '租户用户数量', (await testGetTenantUsers(tenantId)).length)
-    // await testPatchTenantUser(tenantUserId)
-    // const v = (await testGetTenantUserById(tenantUserId))
-    // console.info('[info]', '备注名称', v.userAlias)
+    const tenantUserId = await testPostTenantUser(tenantId, userId)
+    console.info(
+      '[info]',
+      '租户用户数量',
+      (await testGetTenantUsers(tenantId)).length
+    )
+    await testPatchTenantUser(tenantUserId)
+    const v = await testGetTenantUserById(tenantUserId)
+    console.info('[info]', '备注名称', v.userAlias)
     myService.close()
   } catch (err) {
     console.error('[error]', err)
