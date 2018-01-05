@@ -28,6 +28,10 @@ function defineModel (sequelize, name, attributes, options) {
 
   const sqlzAttributes = {}
   const associations = {}
+  let createdAtField
+  let createdAtWhitelist
+  let updatedAtField
+  let updatedAtWhitelist
   for (let attr in attributes) {
     const v = attributes[attr]
     let item = isString(v) ? { type: v } : v
@@ -70,14 +74,27 @@ function defineModel (sequelize, name, attributes, options) {
 
     // createdAt && updatedAt
     if (attr === 'createdAt' || item.createdAt) {
-      sqlzModelOptions.createdAt = item.field
+      delete sqlzModelOptions.createdAt
+      createdAtField = item.field
+      createdAtWhitelist = item.whitelist
     } else if (attr === 'updatedAt' || item.updatedAt) {
-      sqlzModelOptions.updatedAt = item.field
+      delete sqlzModelOptions.updatedAt
+      updatedAtField = item.field
+      updatedAtWhitelist = item.whitelist
     }
-
-    sqlzAttributes[attr] = item
+    if (attr !== 'createdAt' && attr !== 'updatedAt') {
+      sqlzAttributes[attr] = item
+    }
   }
   const model = sequelize.define(name, sqlzAttributes, sqlzModelOptions)
+  if (createdAtField) {
+    model.attributes.createdAt.field = createdAtField
+    model.attributes.createdAt.whitelist = createdAtWhitelist
+  }
+  if (updatedAtField) {
+    model.attributes.updatedAt.field = updatedAtField
+    model.attributes.updatedAt.whitelist = updatedAtWhitelist
+  }
   for (let name in associations) {
     const item = associations[name]
     const sqlzModel = item.model.sequelizeModel

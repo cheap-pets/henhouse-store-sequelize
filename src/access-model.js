@@ -3,17 +3,18 @@ const Op = Sequelize.Op
 
 const { isArray } = require('./utils/check-type')
 
-function getAllAttributes (sqlzModel) {
+function getAllAttributes (sqlzModel, onlyWhitelist) {
   const result = []
-  const fields = {}
+  let includeAll = true
   for (let key in sqlzModel.attributes) {
     const item = sqlzModel.attributes[key]
-    if (!fields[item.field]) {
-      fields[item.field] = true
+    if (onlyWhitelist === false || item.whitelist !== false) {
       result.push(key)
+    } else {
+      includeAll = false
     }
   }
-  return result
+  return includeAll ? undefined : result
 }
 
 function prepareAttributes (sqlzModel, attributes) {
@@ -30,12 +31,26 @@ function prepareAttributes (sqlzModel, attributes) {
   return result
 }
 
+function convertConditionValueType (value, type) {
+  switch (type) {
+    case 'INTEGER':
+      value = parseInt(value)
+      break
+    case 'FLOAT':
+    case 'DOUBLE':
+      value = parseFloat(value)
+      break
+  }
+  return value
+}
+
 function prepareConditions (sqlzModel, conditions) {
   let result = {}
   for (let i = 0, len = conditions.length; i < len; i++) {
     const item = conditions[i]
     for (let key in item) {
       if (!sqlzModel.attributes[key]) continue
+      const type = sqlzModel.attributes[key].type.constructor.name
       let value = item[key]
       let op = Op.eq
       if (value[0] === '(' && value[value.length - 1] === ')') {
@@ -45,7 +60,10 @@ function prepareConditions (sqlzModel, conditions) {
       let arr = value.split(',')
       if (arr.length > 1) {
         op = op === Op.between && arr.length === 2 ? Op.between : Op.in
-        value = arr
+        value = []
+        for (let j = 0, len = arr.length; j < len; j++) {
+          value.push(convertConditionValueType(arr[i], type))
+        }
       } else {
         if (value[0] === '*') {
           op = Op.like
@@ -55,6 +73,7 @@ function prepareConditions (sqlzModel, conditions) {
           op = Op.like
           value = value.substr(0, value.length - 1) + '%'
         }
+        value = convertConditionValueType(value, type)
       }
       result[key] = {
         [op]: value
@@ -87,7 +106,8 @@ function prepareQueryOptions (model, queryOptions) {
   const result = {}
   const { attributes, conditions, orders, associations } = queryOptions
   if (attributes && attributes.length) {
-    result.attributes = prepareAttributes(model.sequelizeModel, attributes)
+    const validAttrs = prepareAttributes(model.sequelizeModel, attributes)
+    validAttrs && (result.attributes = validAttrs)
   }
   if (conditions && conditions.length) {
     result.where = prepareConditions(model.sequelizeModel, conditions)
@@ -165,8 +185,8 @@ async function query (queryOptions, id) {
   queryOptions = queryOptions || { attributes: ['*'] }
   let options = prepareQueryOptions(this, queryOptions)
   if (id === undefined && queryOptions.limit !== 0) {
-    options.limit = queryOptions.limit || 100
-    options.offset = queryOptions.offset || 0
+    options.limit = parseInt(queryOptions.limit || 100)
+    options.offset = parseInt(queryOptions.offset || 0)
   }
   const ret = id === undefined
     ? await this.sequelizeModel.findAll(options)

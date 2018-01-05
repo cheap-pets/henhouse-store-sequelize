@@ -73,12 +73,18 @@ const user = myService.define(
   sequelizeStore,
   'user',
   {
-    id: Types.ID,
+    id: {
+      type: Types.ID,
+      whitelist: false
+    },
     phoneNumber: Types.INT,
     loginId: Types.STRING,
     userName: Types.STRING,
     isRemoved: Types.BOOLEAN,
-    createdAt: Types.DATE,
+    createdAt: {
+      type: Types.DATE,
+      whitelist: false
+    },
     updatedAt: Types.DATE
   },
   {
@@ -108,7 +114,6 @@ const tenantUser = myService.define(
     updatedAt: Types.DATE
   },
   {
-    underscored: true,
     idGenerator: idGen,
     methods: ['get', 'post', 'patch']
   }
@@ -211,7 +216,7 @@ async function testPostTenantUser (tenantId, userId) {
 
 async function testGetTenantUsers () {
   const ret = await request(
-    'http://localhost:3000/my-service/tenant-users?limit=10&order=-id&fields=id,person.userName,tenant.tenantName&tenant.tenantName=y*',
+    'http://localhost:3000/my-service/tenant-users?limit=10&offset=10&order=-id&fields=id,person.userName,tenant.tenantName&tenant.tenantName=y*&tenant.id=123',
     { json: true }
   )
   return ret
