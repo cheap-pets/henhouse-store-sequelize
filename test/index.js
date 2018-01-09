@@ -60,7 +60,16 @@ const tenant = myService.define(
   },
   {
     idGenerator: idGen,
-    methods: ['get', 'post', 'patch'],
+    httpMethods: {
+      get: async function (queryOptions, id) {
+        queryOptions = queryOptions || {}
+        queryOptions.attributes = ['id', 'tenantName', 'shortName']
+        const data = await this.query(queryOptions, id)
+        return data
+      },
+      post: true,
+      patch: true
+    },
     getterMethods: {
       fullName () {
         return 'xxx'
@@ -75,25 +84,35 @@ const user = myService.define(
   {
     id: {
       type: Types.ID,
-      whitelist: false
+      queryByDefault: false
     },
     phoneNumber: Types.INT,
     loginId: Types.STRING,
     userName: Types.STRING,
-    isRemoved: Types.BOOLEAN,
+    isRemoved: {
+      type: Types.BOOLEAN,
+      queryByDefault: false
+    },
     createdAt: {
       type: Types.DATE,
-      whitelist: false
+      queryByDefault: false
     },
-    updatedAt: Types.DATE
+    updatedAt: {
+      type: Types.DATE,
+      queryByDefault: false
+    }
   },
   {
     idGenerator: idGen,
-    methods: ['get', 'post', 'patch']
+    httpMethods: {
+      get: true,
+      post: true,
+      patch: true
+    }
   }
 )
 
-const tenantUser = myService.define(
+myService.define(
   sequelizeStore,
   'tenantUser',
   {
@@ -110,12 +129,22 @@ const tenantUser = myService.define(
     isAdmin: Types.BOOLEAN,
     isDisabled: Types.BOOLEAN,
     isRemoved: Types.BOOLEAN,
-    createdAt: Types.DATE,
-    updatedAt: Types.DATE
+    createdAt: {
+      type: Types.DATE,
+      queryByDefault: false
+    },
+    updatedAt: {
+      type: Types.DATE,
+      queryByDefault: false
+    }
   },
   {
     idGenerator: idGen,
-    methods: ['get', 'post', 'patch']
+    httpMethods: {
+      get: true,
+      post: true,
+      patch: true
+    }
   }
 )
 
@@ -216,7 +245,7 @@ async function testPostTenantUser (tenantId, userId) {
 
 async function testGetTenantUsers () {
   const ret = await request(
-    'http://localhost:3000/my-service/tenant-users?limit=10&offset=10&order=-id&fields=id,person.userName,tenant.tenantName&tenant.tenantName=y*&tenant.id=123',
+    'http://localhost:3000/my-service/tenant-users?limit=10&offset=10&order=-id',
     { json: true }
   )
   return ret
@@ -242,6 +271,7 @@ async function testGetTenantUserById (id) {
 
 async function test () {
   try {
+    /*
     const tenantId = (await testPostTenant())[0]
     console.info('[info]', '租户数量', (await testGetTenants()).length)
     await testPatchTenant(tenantId)
@@ -257,14 +287,17 @@ async function test () {
     console.info('[info]', '用户名称', (await testGetUserById(userId)).userName)
 
     const tenantUserId = await testPostTenantUser(tenantId, userId)
+    */
     console.info(
       '[info]',
       '租户用户数量',
-      (await testGetTenantUsers(tenantId)).length
+      (await testGetTenantUsers(0)).length
     )
+    /*
     await testPatchTenantUser(tenantUserId)
     const v = await testGetTenantUserById(tenantUserId)
     console.info('[info]', '备注名称', v.userAlias)
+    */
     myService.close()
   } catch (err) {
     console.error('[error]', err)

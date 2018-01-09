@@ -3,12 +3,12 @@ const Op = Sequelize.Op
 
 const { isArray } = require('./utils/check-type')
 
-function getAllAttributes (sqlzModel, onlyWhitelist) {
+function getAllAttributes (sqlzModel) {
   const result = []
   let includeAll = true
   for (let key in sqlzModel.attributes) {
     const item = sqlzModel.attributes[key]
-    if (onlyWhitelist === false || item.whitelist !== false) {
+    if (item.queryByDefault !== false) {
       result.push(key)
     } else {
       includeAll = false
@@ -62,7 +62,7 @@ function prepareConditions (sqlzModel, conditions) {
         op = op === Op.between && arr.length === 2 ? Op.between : Op.in
         value = []
         for (let j = 0, len = arr.length; j < len; j++) {
-          value.push(convertConditionValueType(arr[i], type))
+          value.push(convertConditionValueType(arr[j], type))
         }
       } else {
         if (value[0] === '*') {
@@ -194,7 +194,7 @@ async function query (queryOptions, id) {
   return ret
 }
 
-async function create (data) {
+async function create (queryOptions, data) {
   const seqModel = this.sequelizeModel
   const primaryKey = seqModel.primaryKeyAttribute
   let ret
@@ -210,7 +210,7 @@ async function create (data) {
   return ret
 }
 
-async function update (data, id) {
+async function update (queryOptions, data, id) {
   const seqModel = this.sequelizeModel
   const primaryKey = seqModel.primaryKeyAttribute
   const modelData = await prepareValues(data, this)
@@ -227,11 +227,15 @@ async function update (data, id) {
   }
 }
 
-async function remove (id) {
+async function remove (queryOptions, id) {
   const seqModel = this.sequelizeModel
-  const queryOptions = {}
-  if (id !== undefined) queryOptions[seqModel.primaryKeyAttribute] = id
-  await seqModel.destroy({ where: queryOptions })
+  queryOptions = queryOptions || {}
+  if (id !== undefined) {
+    queryOptions.where = {
+      [seqModel.primaryKeyAttribute]: id
+    }
+  }
+  await seqModel.destroy(queryOptions)
 }
 
 module.exports = {

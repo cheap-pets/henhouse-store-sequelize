@@ -3,7 +3,8 @@ exports.isArray = function isArray (obj) {
 }
 
 exports.isFunction = function isFunction (obj) {
-  return Object.prototype.toString.call(obj) === '[object Function]'
+  const str = Object.prototype.toString.call(obj)
+  return str === '[object Function]' || str === '[object AsyncFunction]'
 }
 
 exports.isPlainObject = function isPlainObject (v) {
