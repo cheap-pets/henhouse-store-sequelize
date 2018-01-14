@@ -6,6 +6,9 @@ const FieldNameMode = require('./constants/field-name-modes')
 const defineModel = require('./define-model')
 const accessModel = require('./access-model')
 
+const parseQueryOptions = require('./utils/parse-query-options')
+const parseRequestBody = require('./utils/parse-request-body')
+
 const { isFunction } = require('./utils/check-type')
 
 function getSequelizeInstance (v) {
@@ -16,8 +19,8 @@ function getCustomizedProcedure (model, option, preset) {
   let procedure
   if (isFunction(option)) {
     procedure = option
-  } else if (preset && option[preset]) {
-    procedure = option[preset]
+  } else if (option && isFunction(option[preset || 'default'])) {
+    procedure = option[preset || 'default']
   }
   return procedure
 }
@@ -27,37 +30,65 @@ function getAccessProcedure (method, option) {
   switch (method) {
     case 'get':
       procedure = async (ctx, next, model, id) => {
-        const preset = ctx.$queryOptions ? ctx.$queryOptions.preset : undefined
-        const proc = getCustomizedProcedure(model, option, preset) || model.query
-        const data = await proc.call(model, ctx.$queryOptions, id)
-        ctx.body = JSON.stringify(data, function (key, value) {
-          return (value === null) ? undefined : value
-        })
+        (!ctx.$fields && ctx.$query) && (ctx.$fields = ['*'])
+        ctx.$sequelizeOptions = parseQueryOptions(ctx, model)
+        const proc = getCustomizedProcedure(model, option, ctx.$preset)
+        let data
+        if (proc) {
+          data = await proc(ctx, next, model, id)
+        } else {
+          data = await model.query(ctx.$sequelizeOptions, id)
+        }
         ctx.type = 'application/json; charset=utf-8'
+        ctx.body = JSON.stringify(data, function (key, value) {
+          return value === null ? undefined : value
+        })
       }
       break
     case 'post':
       procedure = async (ctx, next, model) => {
-        const preset = ctx.$queryOptions ? ctx.$queryOptions.preset : undefined
-        const proc = getCustomizedProcedure(model, option, preset) || model.create
-        ctx.body = await proc.call(model, ctx.$queryOptions, ctx.$requestBody)
+        ctx.$sequelizeOptions = parseQueryOptions(ctx, model)
+        ctx.$sequelizeData = await parseRequestBody(ctx.request.body, model, true)
+        const proc = getCustomizedProcedure(model, option, ctx.$preset)
+        let result
+        if (proc) {
+          result = await proc.call(ctx, next, model)
+        } else {
+          result = await model.create(ctx.$sequelizeData)
+        }
+        ctx.body = result || 'ok'
       }
       break
     case 'put':
     case 'patch':
       procedure = async (ctx, next, model, id) => {
-        const preset = ctx.$queryOptions ? ctx.$queryOptions.preset : undefined
-        const proc = getCustomizedProcedure(model, option, preset) || model.update
-        await proc.call(model, ctx.$queryOptions, ctx.$requestBody, id)
-        ctx.body = 'ok'
+        ctx.$sequelizeOptions = parseQueryOptions(ctx, model)
+        ctx.$sequelizeData = await parseRequestBody(ctx.request.body, model)
+        const proc = getCustomizedProcedure(model, option, ctx.$preset)
+        let result
+        if (proc) {
+          result = await proc(ctx, next, model, id)
+        } else {
+          result = await model.update(ctx.$sequelizeData, ctx.$sequelizeOptions, id)
+        }
+        ctx.body = result || 'ok'
       }
       break
     case 'delete':
       procedure = async (ctx, next, model, id) => {
-        const preset = ctx.$queryOptions ? ctx.$queryOptions.preset : undefined
-        const proc = getCustomizedProcedure(model, option, preset) || model.remove
-        await proc.call(model, ctx.$queryOptions, id)
-        ctx.body = 'ok'
+        if (id !== undefined) {
+          !ctx.$query && (ctx.$query = {})
+          ctx.$query[model.sequelizeModel.primaryKeyAttribute] = id
+        }
+        ctx.$sequelizeOptions = parseQueryOptions(ctx, model)
+        const proc = getCustomizedProcedure(model, option, ctx.$preset)
+        let result
+        if (proc) {
+          result = await proc(ctx, next, model, id)
+        } else {
+          result = await model.remove(ctx.$sequelizeOptions)
+        }
+        ctx.body = result || 'ok'
       }
       break
   }
@@ -71,20 +102,30 @@ class SequelizeStore {
     this.sequelize = getSequelizeInstance(options)
   }
   define (modelName, attributes, options) {
-    const model = {}
+    const model = {
+      attributes
+    }
     options = options || {}
+    options.path && (model.path = options.path)
     options.tableNameMode = options.tableNameMode || this.tableNameMode
     options.fieldNameMode = options.fieldNameMode || this.fieldNameMode
-    const { sequelizeModel, associations } = defineModel(this.sequelize, modelName, attributes, options)
+
+    const { sequelizeModel, associations } = defineModel(
+      this.sequelize,
+      modelName,
+      attributes,
+      options
+    )
+
     model.sequelizeModel = sequelizeModel
     model.associations = associations
     model.idGenerator = options.idGenerator
     model.query = accessModel.query
-    if (options.canModify !== false) {
+    if (options.readonly !== true) {
       model.create = accessModel.create
       model.update = accessModel.update
+      options.removable && (model.remove = accessModel.remove)
     }
-    (options.canRemove !== false) && (model.remove = accessModel.remove)
 
     model.methods = {}
     for (let key in options.httpMethods) {

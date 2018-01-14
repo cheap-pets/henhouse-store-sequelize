@@ -50,7 +50,7 @@ function defineModel (sequelize, name, attributes, options) {
       attr = fKey
       const sqlzModel = item.model.sequelizeModel
       item = {
-        type: item.model.attributes[key].type
+        type: item.type || item.keyType || item.model.attributes[key].type
       }
       if (sqlzModel) {
         item.references = {

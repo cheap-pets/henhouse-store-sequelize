@@ -16,9 +16,7 @@
     "node": true
   },
   "rules": {
-    //忽略一个对象属性访问注入的安全风险
     "security/detect-object-injection": 0,
-    // 对长度超过120长度的代码行进行警告，并忽略注释、字符串等情况
     "max-len": [
       1,
       {

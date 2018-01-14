@@ -10,6 +10,9 @@ const Types = Henhouse.DataTypes
 const flakeIdGen = new FlakeId()
 const id2Int = require('biguint-format')
 
+const moment = require('moment')
+moment.locale('zh-cn')
+
 function idGen (count) {
   let ret
   if (count) {
@@ -25,13 +28,24 @@ const myService = new Henhouse({
   servicePath: 'my-service'
 })
 const sequelizeStore = new SequelizeStore({
-  dialect: 'sqlite',
+  // dialect: 'sqlite',
+  host: 'localhost',
+  port: 3306,
+  dialect: 'mysql',
+  database: 'noname',
+  username: 'root',
+  password: '999999',
   tableNameMode: SequelizeStore.TableNameMode.UNDERLINE,
   fieldNameMode: SequelizeStore.FieldNameMode.UNDERLINE,
   storage: resolve(__dirname, 'noname.db3'),
   pool: {
     max: 5,
     idle: 30000
+  },
+  timezone: '+08:00',
+  dialectOptions: {
+    supportBigNumbers: true,
+    bigNumberStrings: true
   }
 })
 
@@ -50,21 +64,22 @@ const tenant = myService.define(
   'tenant',
   {
     id: Types.ID,
-    tenantName: Types.STRING,
+    name: Types.STRING,
     shortName: Types.STRING,
     memo: Types.STRING,
     isDisabled: Types.BOOLEAN,
     isRemoved: Types.BOOLEAN,
     createdAt: Types.DATE,
-    updatedAt: Types.DATE
+    updatedAt: Types.DATE,
+    deletedAt: Types.DATE
   },
   {
     idGenerator: idGen,
     httpMethods: {
-      get: async function (queryOptions, id) {
-        queryOptions = queryOptions || {}
-        queryOptions.attributes = ['id', 'tenantName', 'shortName']
-        const data = await this.query(queryOptions, id)
+      get: async function (ctx, next, model, id) {
+        const queryOptions = ctx.$sequelizeOptions || {}
+        queryOptions.attributes = ['id', 'name', 'shortName', 'deletedAt']
+        const data = await model.query(queryOptions, id)
         return data
       },
       post: true,
@@ -88,7 +103,7 @@ const user = myService.define(
     },
     phoneNumber: Types.INT,
     loginId: Types.STRING,
-    userName: Types.STRING,
+    name: Types.STRING,
     isRemoved: {
       type: Types.BOOLEAN,
       queryByDefault: false
@@ -126,7 +141,7 @@ myService.define(
       required: false
     },
     userAlias: Types.STRING,
-    isAdmin: Types.BOOLEAN,
+    isAdministrator: Types.BOOLEAN,
     isDisabled: Types.BOOLEAN,
     isRemoved: Types.BOOLEAN,
     createdAt: {
@@ -156,11 +171,13 @@ async function testPostTenant () {
     url: 'http://localhost:3000/my-service/tenants',
     form: [
       {
-        tenantName: 'xx',
-        shortName: 'x'
+        name: 'xx',
+        shortName: 'x',
+        x: true,
+        deletedAt: moment('2018-1-13 23:00:00').toDate()
       },
       {
-        tenantName: 'yy',
+        name: 'yy',
         shortName: 'y'
       }
     ],
@@ -181,7 +198,7 @@ async function testPatchTenant (id) {
     method: 'PATCH',
     url: 'http://localhost:3000/my-service/tenants/' + id,
     form: {
-      tenantName: 'yy'
+      name: 'yy'
     },
     json: true
   })
@@ -191,6 +208,7 @@ async function testGetTenantById (id) {
   const ret = await request('http://localhost:3000/my-service/tenants/' + id, {
     json: true
   })
+  console.log(moment(ret.createAt).format('LLLL'))
   return ret
 }
 
@@ -199,7 +217,7 @@ async function testPostUser () {
     method: 'POST',
     url: 'http://localhost:3000/my-service/users',
     form: {
-      userName: '张三',
+      name: '张三',
       phoneNumber: 18611027530
     }
   })
@@ -245,7 +263,7 @@ async function testPostTenantUser (tenantId, userId) {
 
 async function testGetTenantUsers () {
   const ret = await request(
-    'http://localhost:3000/my-service/tenant-users?limit=10&offset=10&order=-id',
+    'http://localhost:3000/my-service/tenant-users?_fields=id,tenant.name,person.name&_limit=10&_offset=10&_order=-tenant.name,person.name',
     { json: true }
   )
   return ret
@@ -271,7 +289,6 @@ async function testGetTenantUserById (id) {
 
 async function test () {
   try {
-    /*
     const tenantId = (await testPostTenant())[0]
     console.info('[info]', '租户数量', (await testGetTenants()).length)
     await testPatchTenant(tenantId)
@@ -285,19 +302,17 @@ async function test () {
     console.info('[info]', '用户数量', (await testGetUsers()).length)
     await testPatchUser(userId)
     console.info('[info]', '用户名称', (await testGetUserById(userId)).userName)
-
     const tenantUserId = await testPostTenantUser(tenantId, userId)
-    */
     console.info(
       '[info]',
       '租户用户数量',
-      (await testGetTenantUsers(0)).length
+      (await testGetTenantUsers()).length
     )
-    /*
     await testPatchTenantUser(tenantUserId)
+
     const v = await testGetTenantUserById(tenantUserId)
     console.info('[info]', '备注名称', v.userAlias)
-    */
+    sequelizeStore.sequelize.close()
     myService.close()
   } catch (err) {
     console.error('[error]', err)
