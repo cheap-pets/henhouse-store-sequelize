@@ -1,14 +1,12 @@
 const Henhouse = require('henhouse')
 const SequelizeStore = require('../src')
+const Types = Henhouse.DataTypes
 
-const { resolve } = require('path')
 const FlakeId = require('flake-idgen')
+const id2Int = require('biguint-format')
+const flakeIdGen = new FlakeId()
 
 const request = require('request-promise-native')
-
-const Types = Henhouse.DataTypes
-const flakeIdGen = new FlakeId()
-const id2Int = require('biguint-format')
 
 const moment = require('moment')
 moment.locale('zh-cn')
@@ -37,11 +35,13 @@ const sequelizeStore = new SequelizeStore({
   password: '999999',
   tableNameMode: SequelizeStore.TableNameMode.UNDERLINE,
   fieldNameMode: SequelizeStore.FieldNameMode.UNDERLINE,
+  /*
   storage: resolve(__dirname, 'noname.db3'),
   pool: {
     max: 5,
     idle: 30000
   },
+  */
   timezone: '+08:00',
   dialectOptions: {
     supportBigNumbers: true,
