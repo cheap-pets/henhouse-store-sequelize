@@ -15,7 +15,7 @@ function getSequelizeInstance (v) {
   return v instanceof Sequelize ? v : new Sequelize(v)
 }
 
-function getCustomizedProcedure (model, option, preset) {
+function getCustomizedProcedure (option, preset) {
   let procedure
   if (isFunction(option)) {
     procedure = option
@@ -32,7 +32,7 @@ function getAccessProcedure (method, option) {
       procedure = async (ctx, next, model, id) => {
         (!ctx.$fields && ctx.$query) && (ctx.$fields = ['*'])
         ctx.$sequelizeOptions = parseQueryOptions(ctx, model)
-        const proc = getCustomizedProcedure(model, option, ctx.$preset)
+        const proc = getCustomizedProcedure(option, ctx.$preset)
         let data
         if (proc) {
           data = await proc(ctx, next, model, id)
@@ -49,7 +49,7 @@ function getAccessProcedure (method, option) {
       procedure = async (ctx, next, model) => {
         ctx.$sequelizeOptions = parseQueryOptions(ctx, model)
         ctx.$sequelizeData = await parseRequestBody(ctx.request.body, model, true)
-        const proc = getCustomizedProcedure(model, option, ctx.$preset)
+        const proc = getCustomizedProcedure(option, ctx.$preset)
         let result
         if (proc) {
           result = await proc.call(ctx, next, model)
@@ -64,7 +64,7 @@ function getAccessProcedure (method, option) {
       procedure = async (ctx, next, model, id) => {
         ctx.$sequelizeOptions = parseQueryOptions(ctx, model)
         ctx.$sequelizeData = await parseRequestBody(ctx.request.body, model)
-        const proc = getCustomizedProcedure(model, option, ctx.$preset)
+        const proc = getCustomizedProcedure(option, ctx.$preset)
         let result
         if (proc) {
           result = await proc(ctx, next, model, id)
@@ -81,7 +81,7 @@ function getAccessProcedure (method, option) {
           ctx.$query[model.sequelizeModel.primaryKeyAttribute] = id
         }
         ctx.$sequelizeOptions = parseQueryOptions(ctx, model)
-        const proc = getCustomizedProcedure(model, option, ctx.$preset)
+        const proc = getCustomizedProcedure(option, ctx.$preset)
         let result
         if (proc) {
           result = await proc(ctx, next, model, id)

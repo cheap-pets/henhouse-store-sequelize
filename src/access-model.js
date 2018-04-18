@@ -21,8 +21,9 @@ async function create (data) {
   let ret
   if (isArray(data)) {
     ret = []
-    for (let i = 0, len = data.length; i < len; i++) {
-      ret.push((await seqModel.create(data[i]))[primaryKey])
+    const arr = await seqModel.bulkCreate(data)
+    for (let i = 0, len = arr.length; i < len; i++) {
+      ret.push(arr[primaryKey])
     }
   } else {
     ret = (await seqModel.create(data))[primaryKey]

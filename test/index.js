@@ -263,7 +263,7 @@ async function testPostTenantUser (tenantId, userId) {
 
 async function testGetTenantUsers () {
   const ret = await request(
-    'http://localhost:3000/my-service/tenant-users?_fields=id,tenant.name,person.name&_limit=10&_offset=10&_order=-tenant.name,person.name',
+    'http://localhost:3000/my-service/tenant-users?_fields=id,tenant.name,person.name&_limit=10&tenant.id=1,2,3&_offset=10&_order=-tenant.name,person.name',
     { json: true }
   )
   return ret

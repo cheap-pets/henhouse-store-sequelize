@@ -1,6 +1,8 @@
 const Sequelize = require('sequelize')
 const Op = Sequelize.Op
 
+const { isString, isArray } = require('../utils/check-type')
+
 function combineAttribute (options, model, attribute) {
   const arr = attribute.split('.')
   for (let i = 0, len = arr.length; i < len; i++) {
@@ -43,7 +45,8 @@ function combineCondition (options, model, key, value) {
 
 function combineConditions (options, model, conditions) {
   for (const key in conditions) {
-    const value = conditions[key].trim()
+    let value = conditions[key]
+    isString(value) && (value = value.trim())
     combineCondition(options, model, key, value)
   }
 }
@@ -134,7 +137,7 @@ function prepareConditions (sqlzModel, conditions) {
         op = Op.between
         value = value.substr(1, value.length - 2)
       }
-      let arr = value.split(',')
+      let arr = isArray(value) ? value : value.split(',')
       if (arr.length > 1) {
         op = op === Op.between && arr.length === 2 ? Op.between : Op.in
         value = []
