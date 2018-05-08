@@ -52,7 +52,7 @@ function getAccessProcedure (method, option) {
         const proc = getCustomizedProcedure(option, ctx.$preset)
         let result
         if (proc) {
-          result = await proc.call(ctx, next, model)
+          result = await proc(ctx, next, model)
         } else {
           result = await model.create(ctx.$sequelizeData)
         }
