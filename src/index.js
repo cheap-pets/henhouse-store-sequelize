@@ -56,7 +56,7 @@ function getAccessProcedure (method, option) {
         } else {
           result = await model.create(ctx.$sequelizeData)
         }
-        ctx.body = result || 'ok'
+        ctx.body = result || { success: true }
       }
       break
     case 'put':
@@ -71,7 +71,7 @@ function getAccessProcedure (method, option) {
         } else {
           result = await model.update(ctx.$sequelizeData, ctx.$sequelizeOptions, id)
         }
-        ctx.body = result || 'ok'
+        ctx.body = result || { success: true }
       }
       break
     case 'delete':
@@ -88,7 +88,7 @@ function getAccessProcedure (method, option) {
         } else {
           result = await model.remove(ctx.$sequelizeOptions)
         }
-        ctx.body = result || 'ok'
+        ctx.body = result || { success: true }
       }
       break
   }
