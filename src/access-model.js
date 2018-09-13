@@ -23,7 +23,7 @@ async function create (data) {
     ret = []
     const arr = await seqModel.bulkCreate(data)
     for (let i = 0, len = arr.length; i < len; i++) {
-      ret.push(arr[primaryKey])
+      ret.push(arr[i][primaryKey])
     }
   } else {
     ret = (await seqModel.create(data))[primaryKey]
